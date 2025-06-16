@@ -211,115 +211,90 @@ const App: React.FC = () => {
 
     return (
         <div className={`min-h-screen bg-gradient-to-br ${getBackgroundGradient(timeData.partOfDay)} flex items-center justify-center p-4`}>
-            <div className="w-full mx-auto grid grid-cols-3 gap-3">
+            <div className="w-full mx-auto grid grid-cols-1 md:grid-cols-3 gap-3">
 
-                {/* Clock SVG */}
-                <div className="bg-black/20 backdrop-blur-sm rounded-3xl p-6 shadow-2xl border border-white/10">
-                    <svg
-                        viewBox="0 0 200 200"
-                        className="w-full h-full transform -rotate-90"
-                        aria-label="Palia Clock"
-                    >
-                        {/* Background Circle */}
-                        <circle
-                            cx="100"
-                            cy="100"
-                            r="90"
-                            fill="rgba(0,0,0,0.3)"
-                            stroke="rgba(255,255,255,0.2)"
-                            strokeWidth="2"
-                        />
-
-                        {/* Time Period Segments */}
-                        {/* Day: 06:00-18:00 (0°-180°) - starts at top (12 o'clock) */}
-                        <path
-                            d="M 100 100 L 100 10 A 90 90 0 1 1 100 190 Z"
-                            className="fill-sky-300/80"
-                        />
-
-                        {/* Evening: 18:00-21:00 (180°-225°) */}
-                        <path
-                            d="M 100 100 L 100 190 A 90 90 0 0 1 36.36 163.64 Z"
-                            className="fill-orange-500/80"
-                        />
-
-                        {/* Night: 21:00-03:00 (225°-315°) */}
-                        <path
-                            d="M 100 100 L 36.36 163.64 A 90 90 0 0 1 36.36 36.36 Z"
-                            className="fill-indigo-900/80"
-                        />
-
-                        {/* Morning: 03:00-06:00 (315°-360°/0°) */}
-                        <path
-                            d="M 100 100 L 36.36 36.36 A 90 90 0 0 1 100 10 Z"
-                            className="fill-amber-400/80"
-                        />
-
-                        {/* Hour Markers */}
-                        {Array.from({ length: 24 }, (_, i) => {
-                            const angle = (i * 15) - 90; // 15 degrees per hour, offset by 90
-                            const isMainHour = i % 6 === 0;
-                            const radius = isMainHour ? 75 : 80;
-                            const x1 = 100 + 85 * Math.cos((angle * Math.PI) / 180);
-                            const y1 = 100 + 85 * Math.sin((angle * Math.PI) / 180);
-                            const x2 = 100 + radius * Math.cos((angle * Math.PI) / 180);
-                            const y2 = 100 + radius * Math.sin((angle * Math.PI) / 180);
-
-                            return (
-                                <line
-                                    key={i}
-                                    x1={x1}
-                                    y1={y1}
-                                    x2={x2}
-                                    y2={y2}
-                                    stroke="rgba(255,255,255,0.6)"
-                                    strokeWidth={isMainHour ? "2" : "1"}
-                                />
-                            );
-                        })}
-
-                        {/* Clock Pointer */}
-                        <line
-                            x1="100"
-                            y1="100"
-                            x2="100"
-                            y2="25"
-                            stroke="#ffffff"
-                            strokeWidth="3"
-                            strokeLinecap="round"
-                            transform={`rotate(${timeData.dialRotation} 100 100)`}
-                            className="transition-transform duration-200 ease-out"
-                        />
-
-                        {/* Center Dot */}
-                        <circle
-                            cx="100"
-                            cy="100"
-                            r="4"
-                            fill="#ffffff"
-                        />
-                    </svg>
-                </div>
-
-                <div className="bg-black/20 backdrop-blur-sm rounded-3xl p-6 shadow-2xl border border-white/10 flex flex-col items-center justify-center">
-
-                    {/* Time Display */}
-                    <div className="text-center space-y-4">
-                        <div className="text-4xl sm:text-8xl font-bold text-white font-mono tracking-wider">
-                            {timeData.clockTime}
-                        </div>
-
-                        <div className={`text-xl sm:text-4xl font-semibold ${getPeriodColor(timeData.partOfDay)}`}>
-                            {timeData.partOfDay}
-                        </div>
-
-                        <div className="text-lg sm:text-2xl text-gray-300 font-medium">
-                            {timeData.dayText}
-                        </div>
+                {/* Clock SVG - hidden on small screens */}
+                <div className="hidden md:block">
+                    <div className="bg-black/20 backdrop-blur-sm rounded-3xl p-6 shadow-2xl border border-white/10">
+                        <svg
+                            viewBox="0 0 200 200"
+                            className="w-full h-full transform -rotate-90"
+                            aria-label="Palia Clock"
+                        >
+                            {/* Background Circle */}
+                            <circle
+                                cx="100"
+                                cy="100"
+                                r="90"
+                                fill="rgba(0,0,0,0.3)"
+                                stroke="rgba(255,255,255,0.2)"
+                                strokeWidth="2"
+                            />
+                            {/* Time Period Segments */}
+                            {/* Day: 06:00-18:00 (0°-180°) - starts at top (12 o'clock) */}
+                            <path
+                                d="M 100 100 L 100 10 A 90 90 0 1 1 100 190 Z"
+                                className="fill-sky-300/80"
+                            />
+                            {/* Evening: 18:00-21:00 (180°-225°) */}
+                            <path
+                                d="M 100 100 L 100 190 A 90 90 0 0 1 36.36 163.64 Z"
+                                className="fill-orange-500/80"
+                            />
+                            {/* Night: 21:00-03:00 (225°-315°) */}
+                            <path
+                                d="M 100 100 L 36.36 163.64 A 90 90 0 0 1 36.36 36.36 Z"
+                                className="fill-indigo-900/80"
+                            />
+                            {/* Morning: 03:00-06:00 (315°-360°/0°) */}
+                            <path
+                                d="M 100 100 L 36.36 36.36 A 90 90 0 0 1 100 10 Z"
+                                className="fill-amber-400/80"
+                            />
+                            {/* Hour Markers */}
+                            {Array.from({ length: 24 }, (_, i) => {
+                                const angle = (i * 15) - 90; // 15 degrees per hour, offset by 90
+                                const isMainHour = i % 6 === 0;
+                                const radius = isMainHour ? 75 : 80;
+                                const x1 = 100 + 85 * Math.cos((angle * Math.PI) / 180);
+                                const y1 = 100 + 85 * Math.sin((angle * Math.PI) / 180);
+                                const x2 = 100 + radius * Math.cos((angle * Math.PI) / 180);
+                                const y2 = 100 + radius * Math.sin((angle * Math.PI) / 180);
+                                return (
+                                    <line
+                                        key={i}
+                                        x1={x1}
+                                        y1={y1}
+                                        x2={x2}
+                                        y2={y2}
+                                        stroke="rgba(255,255,255,0.6)"
+                                        strokeWidth={isMainHour ? "2" : "1"}
+                                    />
+                                );
+                            })}
+                            {/* Clock Pointer */}
+                            <line
+                                x1="100"
+                                y1="100"
+                                x2="100"
+                                y2="25"
+                                stroke="#ffffff"
+                                strokeWidth="3"
+                                strokeLinecap="round"
+                                transform={`rotate(${timeData.dialRotation} 100 100)`}
+                                className="transition-transform duration-200 ease-out"
+                            />
+                            {/* Center Dot */}
+                            <circle
+                                cx="100"
+                                cy="100"
+                                r="4"
+                                fill="#ffffff"
+                            />
+                        </svg>
                     </div>
-
-                    {/* Legend */}
-                    <div className="mt-6 grid grid-cols-2 gap-2 text-sm">
+                    {/* Legend - hidden on small screens */}
+                    <div className="mt-6 flex flex-row gap-2 items-center justify-center text-sm">
                         <div className="flex items-center space-x-2">
                             <div className="w-3 h-3 rounded-full bg-amber-400"></div>
                             <span className="text-gray-300">Morning (3-6)</span>
@@ -339,7 +314,24 @@ const App: React.FC = () => {
                     </div>
                 </div>
 
-                <div >
+                {/* Time Display - always visible */}
+                <div className="bg-black/20 backdrop-blur-sm rounded-3xl p-6 shadow-2xl border border-white/10 flex flex-col items-center justify-center">
+                    {/* Time Display */}
+                    <div className="text-center space-y-4">
+                        <div className="text-4xl sm:text-8xl font-bold text-white font-mono tracking-wider">
+                            {timeData.clockTime}
+                        </div>
+                        <div className={`text-xl sm:text-4xl font-semibold ${getPeriodColor(timeData.partOfDay)}`}>
+                            {timeData.partOfDay}
+                        </div>
+                        <div className="text-lg sm:text-2xl text-gray-300 font-medium">
+                            {timeData.dayText}
+                        </div>
+                    </div>
+                </div>
+
+                {/* Watering Trackers - always visible */}
+                <div>
                     {/* Crop Watering Tracker */}
                     <div className="mt-4 bg-black/20 backdrop-blur-sm rounded-2xl p-4 shadow-xl border border-white/10">
                         <div className="flex items-center justify-between mb-2">
@@ -348,7 +340,6 @@ const App: React.FC = () => {
                                 Resets at 6:00 AM
                             </div>
                         </div>
-
                         <button
                             onClick={toggleCropsWatered}
                             className={`w-full p-4 rounded-xl transition-all duration-200 flex items-center justify-center space-x-3 ${cropWateringState.cropsWatered
@@ -366,14 +357,12 @@ const App: React.FC = () => {
                                 {cropWateringState.cropsWatered ? 'Crops Watered Today!' : 'Mark Crops as Watered'}
                             </span>
                         </button>
-
                         {cropWateringState.cropsWatered && (
                             <div className="mt-3 p-3 bg-green-600/20 border border-green-500/30 rounded-lg text-center">
                                 <span className="text-green-300 font-medium">🎉 Great job! Your crops are watered for today!</span>
                             </div>
                         )}
                     </div>
-
                     {/* Weekly Crop Watering Checklist */}
                     <div className="mt-4 bg-black/20 backdrop-blur-sm rounded-2xl p-4 shadow-xl border border-white/10">
                         <div className="flex items-center justify-between mb-4">
@@ -382,7 +371,6 @@ const App: React.FC = () => {
                                 {getWeeklyProgress()}% Complete
                             </div>
                         </div>
-
                         {/* Progress Bar */}
                         <div className="mb-4 bg-gray-700/30 rounded-full h-3 overflow-hidden">
                             <div
@@ -390,13 +378,11 @@ const App: React.FC = () => {
                                 style={{ width: `${getWeeklyProgress()}%` }}
                             ></div>
                         </div>
-
                         {/* Weekly Checklist Grid */}
                         <div className="grid grid-cols-7 gap-2">
                             {weeklyWateringState.weeklyChecklist.map((isWatered, dayIndex) => {
                                 const isCurrentDay = dayIndex === timeData.dayOfWeek;
                                 const dayName = getDayName(dayIndex);
-
                                 return (
                                     <div
                                         key={dayIndex}
@@ -408,7 +394,6 @@ const App: React.FC = () => {
                                         <div className="text-xs font-medium text-gray-300 mb-2">
                                             {dayName.slice(0, 3)}
                                         </div>
-
                                         <div className={`w-8 h-8 mx-auto rounded-full border-2 flex items-center justify-center transition-all duration-200 ${isWatered
                                             ? 'bg-green-500 border-green-500 text-white'
                                             : isCurrentDay
@@ -417,7 +402,6 @@ const App: React.FC = () => {
                                             }`}>
                                             {isWatered ? '✓' : dayIndex + 1}
                                         </div>
-
                                         {isCurrentDay && (
                                             <div className="absolute -top-1 -right-1 w-3 h-3 bg-blue-400 rounded-full animate-pulse"></div>
                                         )}
@@ -425,7 +409,6 @@ const App: React.FC = () => {
                                 );
                             })}
                         </div>
-
                         {/* Weekly Summary */}
                         <div className="mt-4 p-3 bg-gray-800/30 rounded-lg">
                             <div className="flex items-center justify-between text-sm">
@@ -436,7 +419,6 @@ const App: React.FC = () => {
                                     Current: Day {timeData.dayOfWeek + 1}
                                 </span>
                             </div>
-
                             {getWeeklyProgress() === 100 && (
                                 <div className="mt-2 p-2 bg-green-600/20 border border-green-500/30 rounded text-center">
                                     <span className="text-green-300 font-medium text-sm">🎉 Perfect week! All crops watered!</span>
@@ -445,7 +427,6 @@ const App: React.FC = () => {
                         </div>
                     </div>
                 </div>
-
             </div>
         </div>
     );
