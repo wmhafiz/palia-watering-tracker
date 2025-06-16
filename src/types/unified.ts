@@ -102,6 +102,10 @@ export interface UnifiedGardenStoreActions {
   getCropsBySource: (source: 'manual' | 'import') => TrackedCrop[];
   /** Update plant instances for an imported crop */
   updatePlantInstances: (cropType: string, plants: Plant[]) => void;
+  /** Save and load a layout with the current tracked crops */
+  saveAndLoadLayout: (saveCode: string, name: string, options?: { notes?: string; tags?: string[] }) => Promise<{ success: boolean; error?: string }>;
+  /** Load a layout by ID and update tracked crops */
+  loadLayoutById: (layoutId: string) => Promise<{ success: boolean; error?: string }>;
 }
 
 /**

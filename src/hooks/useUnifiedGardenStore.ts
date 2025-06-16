@@ -1,8 +1,8 @@
 import { create } from 'zustand';
 import { subscribeWithSelector } from 'zustand/middleware';
-import { 
-  UnifiedGardenStore, 
-  TrackedCrop, 
+import {
+  UnifiedGardenStore,
+  TrackedCrop,
   PersistedGardenData,
   LegacyData,
   MigrationResult,
@@ -16,6 +16,7 @@ import {
 } from '../types/unified';
 import { Plant } from '../types';
 import { MigrationService } from '../services/migrationService';
+import { layoutService } from '../services/layoutService';
 
 /**
  * Persistence utilities for the unified store
@@ -379,6 +380,176 @@ export const useUnifiedGardenStore = create<UnifiedGardenStore>()(
           lastError: null
         };
       });
+    },
+
+    saveAndLoadLayout: async (saveCode: string, name: string, options: { notes?: string; tags?: string[] } = {}) => {
+      try {
+        set((state) => ({ ...state, isLoading: true, lastError: null }));
+
+        // Save the layout using the layout service
+        const saveResult = await layoutService.saveLayout(saveCode, name, {
+          notes: options.notes,
+          tags: options.tags,
+          isFavorite: false
+        });
+
+        if (!saveResult.success) {
+          set((state) => ({
+            ...state,
+            isLoading: false,
+            lastError: saveResult.error?.message || 'Failed to save layout'
+          }));
+          return { success: false, error: saveResult.error?.message || 'Failed to save layout' };
+        }
+
+        // Import the plants from the saved layout
+        const savedLayout = saveResult.data!;
+        const plants: Plant[] = [];
+        
+        // Convert garden data to plants
+        for (const [cropType, summary] of Object.entries(savedLayout.gardenData.cropSummary.cropBreakdown)) {
+          for (let i = 0; i < summary.total; i++) {
+            plants.push({
+              id: `${cropType}-${i}`,
+              name: cropType,
+              needsWater: false
+            });
+          }
+        }
+
+        // Update tracked crops using existing importPlantsFromGarden logic
+        const plantGroups = groupPlantsByType(plants);
+        const updatedCrops = [...get().trackedCrops];
+
+        // Process each crop type
+        for (const [cropType, plantInstances] of Object.entries(plantGroups)) {
+          const existingCropIndex = updatedCrops.findIndex(crop => crop.cropType === cropType);
+          
+          if (existingCropIndex >= 0) {
+            // Update existing crop with new plant instances
+            updatedCrops[existingCropIndex] = {
+              ...updatedCrops[existingCropIndex],
+              source: 'import',
+              plantInstances,
+              totalCount: plantInstances.length,
+              addedAt: new Date()
+            };
+          } else {
+            // Create new tracked crop
+            const newCrop = createTrackedCrop(cropType, 'import', plantInstances);
+            updatedCrops.push(newCrop);
+          }
+        }
+
+        // Persist changes
+        persistenceUtils.savePersistedData({
+          version: CURRENT_VERSION,
+          trackedCrops: updatedCrops,
+          dailyWateringState: get().dailyWateringState,
+          migratedFromLegacy: false
+        });
+
+        set((state) => ({
+          ...state,
+          trackedCrops: updatedCrops,
+          isLoading: false,
+          lastError: null
+        }));
+
+        return { success: true };
+
+      } catch (error) {
+        const errorMessage = error instanceof Error ? error.message : 'Failed to save and load layout';
+        set((state) => ({
+          ...state,
+          isLoading: false,
+          lastError: errorMessage
+        }));
+        return { success: false, error: errorMessage };
+      }
+    },
+
+    loadLayoutById: async (layoutId: string) => {
+      try {
+        set((state) => ({ ...state, isLoading: true, lastError: null }));
+
+        // Load the layout using the layout service
+        const loadResult = layoutService.loadLayout(layoutId);
+
+        if (!loadResult.success) {
+          set((state) => ({
+            ...state,
+            isLoading: false,
+            lastError: loadResult.error?.message || 'Failed to load layout'
+          }));
+          return { success: false, error: loadResult.error?.message || 'Failed to load layout' };
+        }
+
+        // Import the plants from the loaded layout
+        const savedLayout = loadResult.data!;
+        const plants: Plant[] = [];
+        
+        // Convert garden data to plants
+        for (const [cropType, summary] of Object.entries(savedLayout.gardenData.cropSummary.cropBreakdown)) {
+          for (let i = 0; i < summary.total; i++) {
+            plants.push({
+              id: `${cropType}-${i}`,
+              name: cropType,
+              needsWater: false
+            });
+          }
+        }
+
+        // Update tracked crops using existing importPlantsFromGarden logic
+        const plantGroups = groupPlantsByType(plants);
+        const updatedCrops = [...get().trackedCrops];
+
+        // Process each crop type
+        for (const [cropType, plantInstances] of Object.entries(plantGroups)) {
+          const existingCropIndex = updatedCrops.findIndex(crop => crop.cropType === cropType);
+          
+          if (existingCropIndex >= 0) {
+            // Update existing crop with new plant instances
+            updatedCrops[existingCropIndex] = {
+              ...updatedCrops[existingCropIndex],
+              source: 'import',
+              plantInstances,
+              totalCount: plantInstances.length,
+              addedAt: new Date()
+            };
+          } else {
+            // Create new tracked crop
+            const newCrop = createTrackedCrop(cropType, 'import', plantInstances);
+            updatedCrops.push(newCrop);
+          }
+        }
+
+        // Persist changes
+        persistenceUtils.savePersistedData({
+          version: CURRENT_VERSION,
+          trackedCrops: updatedCrops,
+          dailyWateringState: get().dailyWateringState,
+          migratedFromLegacy: false
+        });
+
+        set((state) => ({
+          ...state,
+          trackedCrops: updatedCrops,
+          isLoading: false,
+          lastError: null
+        }));
+
+        return { success: true };
+
+      } catch (error) {
+        const errorMessage = error instanceof Error ? error.message : 'Failed to load layout';
+        set((state) => ({
+          ...state,
+          isLoading: false,
+          lastError: errorMessage
+        }));
+        return { success: false, error: errorMessage };
+      }
     }
   }))
 );

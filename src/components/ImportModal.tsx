@@ -1,5 +1,4 @@
 import React, { useState, useCallback, useEffect } from 'react';
-import { useGardenStore } from '../hooks/useGardenStore';
 import { useUnifiedGardenStore } from '../hooks/useUnifiedGardenStore';
 import { parseGridData } from '../services/plannerService';
 import { ParsedGardenData, SavedLayout } from '../types/layout';
@@ -21,7 +20,10 @@ export const ImportModal: React.FC<ImportModalProps> = ({ isOpen, onClose }) => 
   const [loading, setLoading] = useState(false);
   const [gardenData, setGardenData] = useState<ParsedGardenData | null>(null);
   const [layoutName, setLayoutName] = useState('');
+  const [layoutNotes, setLayoutNotes] = useState('');
+  const [layoutTags, setLayoutTags] = useState('');
   const [showPreview, setShowPreview] = useState(false);
+  const [saveLoading, setSaveLoading] = useState(false);
   
   // Saved layouts state
   const [savedLayouts, setSavedLayouts] = useState<SavedLayout[]>([]);
@@ -29,8 +31,7 @@ export const ImportModal: React.FC<ImportModalProps> = ({ isOpen, onClose }) => 
   const [searchQuery, setSearchQuery] = useState('');
   const [sortBy, setSortBy] = useState<'name' | 'createdAt' | 'lastModified'>('lastModified');
   
-  const { setPlants } = useGardenStore();
-  const { importPlantsFromGarden } = useUnifiedGardenStore();
+  const { saveAndLoadLayout, loadLayoutById } = useUnifiedGardenStore();
 
   const handleImport = useCallback(async () => {
     setLoading(true);
@@ -96,7 +97,10 @@ export const ImportModal: React.FC<ImportModalProps> = ({ isOpen, onClose }) => 
     setLoading(false);
     setGardenData(null);
     setLayoutName('');
+    setLayoutNotes('');
+    setLayoutTags('');
     setShowPreview(false);
+    setSaveLoading(false);
     setSavedLayouts([]);
     setSelectedLayout(null);
     setSearchQuery('');
@@ -141,27 +145,37 @@ export const ImportModal: React.FC<ImportModalProps> = ({ isOpen, onClose }) => 
       if (!gardenData || !layoutName.trim()) return;
       
       try {
-          // Convert grid data to plants for both stores
-          const plants = [];
-          for (const [cropType, summary] of Object.entries(gardenData.cropSummary.cropBreakdown)) {
-              for (let i = 0; i < summary.total; i++) {
-                  plants.push({
-                      id: `${cropType}-${i}`,
-                      name: cropType,
-                      needsWater: false // Always set to false to remove watered states
-                  });
+          setSaveLoading(true);
+          setError(null);
+          
+          if (selectedLayout) {
+              // Load existing layout
+              const result = await loadLayoutById(selectedLayout.metadata.id);
+              if (!result.success) {
+                  setError(result.error || 'Failed to load layout');
+                  return;
+              }
+          } else {
+              // Save new layout and load it
+              const tags = layoutTags.trim() ? layoutTags.split(',').map(tag => tag.trim()).filter(Boolean) : [];
+              const result = await saveAndLoadLayout(url, layoutName, {
+                  notes: layoutNotes.trim() || undefined,
+                  tags: tags.length > 0 ? tags : undefined
+              });
+              
+              if (!result.success) {
+                  setError(result.error || 'Failed to save and load layout');
+                  return;
               }
           }
           
-          // Update both stores
-          setPlants(plants);
-          importPlantsFromGarden(plants);
-          
           handleClose();
       } catch (err) {
-          setError(err instanceof Error ? err.message : 'Failed to load layout');
+          setError(err instanceof Error ? err.message : 'Failed to process layout');
+      } finally {
+          setSaveLoading(false);
       }
-  }, [gardenData, layoutName, setPlants, importPlantsFromGarden, handleClose]);
+  }, [gardenData, layoutName, layoutNotes, layoutTags, selectedLayout, url, saveAndLoadLayout, loadLayoutById, handleClose]);
 
   const handleBackToImport = useCallback(() => {
     setShowPreview(false);
@@ -453,18 +467,52 @@ export const ImportModal: React.FC<ImportModalProps> = ({ isOpen, onClose }) => 
                     )}
                     
                     {!selectedLayout && (
-                      <div className="mb-4">
-                        <label htmlFor="layout-name" className="block text-sm font-medium text-gray-700 mb-2">
-                          Layout Name
-                        </label>
-                        <input
-                          id="layout-name"
-                          type="text"
-                          value={layoutName}
-                          onChange={(e) => setLayoutName(e.target.value)}
-                          placeholder="Enter a name for this layout..."
-                          className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                        />
+                      <div className="space-y-4 mb-4">
+                        <div>
+                          <label htmlFor="layout-name" className="block text-sm font-medium text-gray-700 mb-2">
+                            Layout Name *
+                          </label>
+                          <input
+                            id="layout-name"
+                            type="text"
+                            value={layoutName}
+                            onChange={(e) => setLayoutName(e.target.value)}
+                            placeholder="Enter a name for this layout..."
+                            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                            required
+                          />
+                        </div>
+                        
+                        <div>
+                          <label htmlFor="layout-notes" className="block text-sm font-medium text-gray-700 mb-2">
+                            Notes (Optional)
+                          </label>
+                          <textarea
+                            id="layout-notes"
+                            value={layoutNotes}
+                            onChange={(e) => setLayoutNotes(e.target.value)}
+                            placeholder="Add any notes about this layout..."
+                            rows={3}
+                            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none"
+                          />
+                        </div>
+                        
+                        <div>
+                          <label htmlFor="layout-tags" className="block text-sm font-medium text-gray-700 mb-2">
+                            Tags (Optional)
+                          </label>
+                          <input
+                            id="layout-tags"
+                            type="text"
+                            value={layoutTags}
+                            onChange={(e) => setLayoutTags(e.target.value)}
+                            placeholder="Enter tags separated by commas (e.g., farming, efficient, beginner)"
+                            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                          />
+                          <p className="text-xs text-gray-500 mt-1">
+                            Tags help organize and search your layouts
+                          </p>
+                        </div>
                       </div>
                     )}
 
@@ -478,19 +526,64 @@ export const ImportModal: React.FC<ImportModalProps> = ({ isOpen, onClose }) => 
                       <button
                         onClick={handleClose}
                         className="px-4 py-2 text-gray-600 bg-white border border-gray-300 rounded-md hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-gray-500 transition-colors"
+                        disabled={saveLoading}
                       >
                         Cancel
                       </button>
+                      
+                      {!selectedLayout && (
+                        <button
+                          onClick={async () => {
+                            if (!gardenData) return;
+                            try {
+                              setSaveLoading(true);
+                              setError(null);
+                              
+                              // Load without saving - use the existing import logic
+                              const plants = [];
+                              for (const [cropType, summary] of Object.entries(gardenData.cropSummary.cropBreakdown)) {
+                                for (let i = 0; i < summary.total; i++) {
+                                  plants.push({
+                                    id: `${cropType}-${i}`,
+                                    name: cropType,
+                                    needsWater: false
+                                  });
+                                }
+                              }
+                              
+                              // Use the existing import action from unified store
+                              const { importPlantsFromGarden } = useUnifiedGardenStore.getState();
+                              importPlantsFromGarden(plants);
+                              
+                              handleClose();
+                            } catch (err) {
+                              setError(err instanceof Error ? err.message : 'Failed to load layout');
+                            } finally {
+                              setSaveLoading(false);
+                            }
+                          }}
+                          disabled={saveLoading}
+                          className="px-4 py-2 text-blue-600 bg-blue-50 border border-blue-200 rounded-md hover:bg-blue-100 focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                        >
+                          {saveLoading ? 'Loading...' : '📥 Load Without Saving'}
+                        </button>
+                      )}
+                      
                       <button
                         onClick={handleSaveLayout}
-                        disabled={!selectedLayout && !layoutName.trim()}
+                        disabled={(!selectedLayout && !layoutName.trim()) || saveLoading}
                         className={`px-4 py-2 text-white rounded-md focus:outline-none focus:ring-2 disabled:opacity-50 disabled:cursor-not-allowed transition-colors ${
                           selectedLayout
                             ? 'bg-blue-600 hover:bg-blue-700 focus:ring-blue-500'
                             : 'bg-green-600 hover:bg-green-700 focus:ring-green-500'
                         }`}
                       >
-                        {selectedLayout ? '📥 Load Layout' : '💾 Save Layout'}
+                        {saveLoading
+                          ? 'Processing...'
+                          : selectedLayout
+                            ? '📥 Load Layout'
+                            : '💾 Save & Load Layout'
+                        }
                       </button>
                     </div>
                   </div>
