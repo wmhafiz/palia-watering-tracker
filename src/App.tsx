@@ -13,10 +13,13 @@ interface CropWateringState {
     lastResetDay: string;
 }
 
-interface WeeklyWateringState {
-    weeklyChecklist: boolean[];
-    lastResetWeek: string;
-    currentWeekStart: string;
+interface CycleWateringState {
+    cycleHistory: Array<{
+        cycleId: string;
+        watered: boolean;
+        timestamp: number;
+        dayText: string;
+    }>;
 }
 
 const App: React.FC = () => {
@@ -32,15 +35,13 @@ const App: React.FC = () => {
         };
     });
 
-    const [weeklyWateringState, setWeeklyWateringState] = useState<WeeklyWateringState>(() => {
-        const saved = localStorage.getItem('paliaWeeklyWateringState');
+    const [cycleWateringState, setCycleWateringState] = useState<CycleWateringState>(() => {
+        const saved = localStorage.getItem('paliaCycleWateringState');
         if (saved) {
             return JSON.parse(saved);
         }
         return {
-            weeklyChecklist: [false, false, false, false, false, false, false],
-            lastResetWeek: '',
-            currentWeekStart: ''
+            cycleHistory: []
         };
     });
 
@@ -52,7 +53,7 @@ const App: React.FC = () => {
         return () => clearInterval(interval);
     }, []);
 
-    const timeData = useMemo((): TimeData & { weekIdentifier: string; dayOfWeek: number } => {
+    const timeData = useMemo((): TimeData & { weekIdentifier: string; dayOfWeek: number; cycleId: string } => {
         // Convert real-world time to Palia time base (PST)
         const PST_UTC_SUNDAY_OFFSET = 60 * 60 * (8 + 3 * 24); // 8 hours PST + 3 days offset
         const realTimePST = currentTime / 1000 - PST_UTC_SUNDAY_OFFSET;
@@ -83,6 +84,10 @@ const App: React.FC = () => {
         const weekNumber = Math.floor((realTimePST - 21 * 3600) / (7 * 24 * 3600));
         const weekIdentifier = `week-${weekNumber}`;
 
+        // Calculate cycle identifier (unique for each cycle)
+        const totalCycles = Math.floor(realTimePST / 3600);
+        const cycleId = `cycle-${totalCycles}`;
+
         // Determine time period
         const getPartOfDay = (hours: number): string => {
             if (hours >= 21 || hours < 3) return "Night"; // 21:00 - 03:00
@@ -104,7 +109,8 @@ const App: React.FC = () => {
             dialRotation,
             hours,
             weekIdentifier,
-            dayOfWeek: palianDayThisWeek
+            dayOfWeek: palianDayThisWeek,
+            cycleId
         };
     }, [currentTime]);
 
@@ -125,38 +131,34 @@ const App: React.FC = () => {
         }
     }, [timeData.dayText, timeData.hours, cropWateringState.lastResetDay]);
 
-    // Handle weekly reset
+    // Update cycle history when daily watering is completed
     useEffect(() => {
-        const currentWeek = timeData.weekIdentifier;
-        const isNewWeek = currentWeek !== weeklyWateringState.lastResetWeek;
+        if (cropWateringState.cropsWatered) {
+            const currentCycleId = timeData.cycleId;
+            const existingCycleIndex = cycleWateringState.cycleHistory.findIndex(
+                cycle => cycle.cycleId === currentCycleId
+            );
 
-        // Reset weekly checklist if it's a new week
-        if (isNewWeek) {
-            const resetWeeklyState: WeeklyWateringState = {
-                weeklyChecklist: [false, false, false, false, false, false, false],
-                lastResetWeek: currentWeek,
-                currentWeekStart: currentWeek
-            };
-            setWeeklyWateringState(resetWeeklyState);
-            localStorage.setItem('paliaWeeklyWateringState', JSON.stringify(resetWeeklyState));
-        }
-    }, [timeData.weekIdentifier, weeklyWateringState.lastResetWeek]);
-
-    // Update weekly checklist when daily watering is completed
-    useEffect(() => {
-        if (cropWateringState.cropsWatered && timeData.dayOfWeek >= 0 && timeData.dayOfWeek < 7) {
-            const newChecklist = [...weeklyWateringState.weeklyChecklist];
-            if (!newChecklist[timeData.dayOfWeek]) {
-                newChecklist[timeData.dayOfWeek] = true;
-                const updatedWeeklyState = {
-                    ...weeklyWateringState,
-                    weeklyChecklist: newChecklist
+            if (existingCycleIndex === -1) {
+                // Add new cycle to history
+                const newCycleEntry = {
+                    cycleId: currentCycleId,
+                    watered: true,
+                    timestamp: Date.now(),
+                    dayText: timeData.dayText
                 };
-                setWeeklyWateringState(updatedWeeklyState);
-                localStorage.setItem('paliaWeeklyWateringState', JSON.stringify(updatedWeeklyState));
+
+                const updatedHistory = [newCycleEntry, ...cycleWateringState.cycleHistory]
+                    .slice(0, 5); // Keep only last 5 cycles
+
+                const updatedCycleState = {
+                    cycleHistory: updatedHistory
+                };
+                setCycleWateringState(updatedCycleState);
+                localStorage.setItem('paliaCycleWateringState', JSON.stringify(updatedCycleState));
             }
         }
-    }, [cropWateringState.cropsWatered, timeData.dayOfWeek, weeklyWateringState]);
+    }, [cropWateringState.cropsWatered, timeData.cycleId, timeData.dayText, cycleWateringState]);
 
     // Save state to localStorage whenever it changes
     useEffect(() => {
@@ -164,8 +166,8 @@ const App: React.FC = () => {
     }, [cropWateringState]);
 
     useEffect(() => {
-        localStorage.setItem('paliaWeeklyWateringState', JSON.stringify(weeklyWateringState));
-    }, [weeklyWateringState]);
+        localStorage.setItem('paliaCycleWateringState', JSON.stringify(cycleWateringState));
+    }, [cycleWateringState]);
 
     const toggleCropsWatered = () => {
         setCropWateringState(prev => ({
@@ -199,14 +201,14 @@ const App: React.FC = () => {
         }
     };
 
-    const getDayName = (dayIndex: number): string => {
-        const days = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
-        return days[dayIndex];
+
+    const getCycleProgress = (): number => {
+        const wateredCycles = cycleWateringState.cycleHistory.filter(cycle => cycle.watered).length;
+        return Math.round((wateredCycles / 5) * 100);
     };
 
-    const getWeeklyProgress = (): number => {
-        const completedDays = weeklyWateringState.weeklyChecklist.filter(day => day).length;
-        return Math.round((completedDays / 7) * 100);
+    const getCurrentCycleStatus = (): boolean => {
+        return cycleWateringState.cycleHistory.some(cycle => cycle.cycleId === timeData.cycleId && cycle.watered);
     };
 
     return (
@@ -214,7 +216,7 @@ const App: React.FC = () => {
             <div className="w-full mx-auto grid grid-cols-1 md:grid-cols-3 gap-3">
 
                 {/* Clock SVG - hidden on small screens */}
-                <div className="hidden md:block">
+                <div className="hidden sm:block">
                     <div className="bg-black/20 backdrop-blur-sm rounded-3xl p-6 shadow-2xl border border-white/10">
                         <svg
                             viewBox="0 0 200 200"
@@ -327,6 +329,10 @@ const App: React.FC = () => {
                         <div className="text-lg sm:text-2xl text-gray-300 font-medium">
                             {timeData.dayText}
                         </div>
+
+                        <p className="text-md text-gray-400 font-medium">
+                            Palia week begins on Sundays 9 PM PST (UTC-8), which will show as "Day 1 Cycle 1". Each Day has 24 Cycles, the Week has 7 Days.
+                        </p>
                     </div>
                 </div>
 
@@ -363,65 +369,67 @@ const App: React.FC = () => {
                             </div>
                         )}
                     </div>
-                    {/* Weekly Crop Watering Checklist */}
+                    {/* Last 5 Cycles Watering Status */}
                     <div className="mt-4 bg-black/20 backdrop-blur-sm rounded-2xl p-4 shadow-xl border border-white/10">
                         <div className="flex items-center justify-between mb-4">
-                            <h3 className="text-lg font-semibold text-white">📅 Weekly Watering Progress</h3>
+                            <h3 className="text-lg font-semibold text-white">🔄 Last 5 Cycles Status</h3>
                             <div className="text-sm text-gray-300">
-                                {getWeeklyProgress()}% Complete
+                                {getCycleProgress()}% Complete
                             </div>
                         </div>
                         {/* Progress Bar */}
                         <div className="mb-4 bg-gray-700/30 rounded-full h-3 overflow-hidden">
                             <div
                                 className="h-full bg-gradient-to-r from-green-500 to-emerald-400 transition-all duration-500 ease-out"
-                                style={{ width: `${getWeeklyProgress()}%` }}
+                                style={{ width: `${getCycleProgress()}%` }}
                             ></div>
                         </div>
-                        {/* Weekly Checklist Grid */}
-                        <div className="grid grid-cols-7 gap-2">
-                            {weeklyWateringState.weeklyChecklist.map((isWatered, dayIndex) => {
-                                const isCurrentDay = dayIndex === timeData.dayOfWeek;
-                                const dayName = getDayName(dayIndex);
+                        {/* Cycle History Grid */}
+                        <div className="grid grid-cols-5 gap-2">
+                            {Array.from({ length: 5 }, (_, index) => {
+                                const cycleEntry = cycleWateringState.cycleHistory[index];
+                                const isCurrentCycle = cycleEntry?.cycleId === timeData.cycleId;
+                                const isWatered = cycleEntry?.watered || false;
+
                                 return (
                                     <div
-                                        key={dayIndex}
-                                        className={`relative p-3 rounded-lg text-center transition-all duration-200 ${isCurrentDay
+                                        key={index}
+                                        className={`relative p-3 rounded-lg text-center transition-all duration-200 ${isCurrentCycle
                                             ? 'bg-blue-600/30 border-2 border-blue-400/50 ring-2 ring-blue-300/20'
                                             : 'bg-gray-700/20 border border-gray-600/30'
                                             }`}
                                     >
                                         <div className="text-xs font-medium text-gray-300 mb-2">
-                                            {dayName.slice(0, 3)}
+                                            {cycleEntry ? cycleEntry.dayText.split(' ').slice(-2).join(' ') : `C${index + 1}`}
                                         </div>
                                         <div className={`w-8 h-8 mx-auto rounded-full border-2 flex items-center justify-center transition-all duration-200 ${isWatered
                                             ? 'bg-green-500 border-green-500 text-white'
-                                            : isCurrentDay
+                                            : isCurrentCycle
                                                 ? 'border-blue-400 text-blue-300'
                                                 : 'border-gray-500 text-gray-400'
                                             }`}>
-                                            {isWatered ? '✓' : dayIndex + 1}
+                                            {isWatered ? '✓' : cycleEntry ? '○' : '-'}
                                         </div>
-                                        {isCurrentDay && (
+                                        {isCurrentCycle && (
                                             <div className="absolute -top-1 -right-1 w-3 h-3 bg-blue-400 rounded-full animate-pulse"></div>
                                         )}
                                     </div>
                                 );
                             })}
                         </div>
-                        {/* Weekly Summary */}
+                        {/* Cycle Summary */}
                         <div className="mt-4 p-3 bg-gray-800/30 rounded-lg">
                             <div className="flex items-center justify-between text-sm">
                                 <span className="text-gray-300">
-                                    Days Completed: {weeklyWateringState.weeklyChecklist.filter(day => day).length}/7
+                                    Cycles Watered: {cycleWateringState.cycleHistory.filter(cycle => cycle.watered).length}/5
                                 </span>
                                 <span className="text-gray-300">
-                                    Current: Day {timeData.dayOfWeek + 1}
+                                    Current: {getCurrentCycleStatus() ? 'Watered' : 'Not Watered'}
                                 </span>
                             </div>
-                            {getWeeklyProgress() === 100 && (
+                            {getCycleProgress() === 100 && (
                                 <div className="mt-2 p-2 bg-green-600/20 border border-green-500/30 rounded text-center">
-                                    <span className="text-green-300 font-medium text-sm">🎉 Perfect week! All crops watered!</span>
+                                    <span className="text-green-300 font-medium text-sm">🎉 Perfect! Last 5 cycles all watered!</span>
                                 </div>
                             )}
                         </div>
