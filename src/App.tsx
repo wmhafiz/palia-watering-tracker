@@ -1,4 +1,7 @@
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
+import { ImportModal } from './components/ImportModal';
+import { PlantComponent } from './components/PlantComponent';
+import { useGardenStore } from './hooks/useGardenStore';
 
 interface TimeData {
     clockTime: string;
@@ -126,7 +129,9 @@ const App: React.FC = () => {
     });
 
     const [isCropModalOpen, setIsCropModalOpen] = useState(false);
+    const [isImportModalOpen, setImportModalOpen] = useState(false);
     const [allCrops, setAllCrops] = useState<any[]>([]);
+    const { plants } = useGardenStore();
     const [tempSelectedCrops, setTempSelectedCrops] = useState<string[] | null>(null);
     const [filterBuff, setFilterBuff] = useState('');
     const [filterRarity, setFilterRarity] = useState('');
@@ -577,8 +582,9 @@ const App: React.FC = () => {
                             </div>
                         </>
                     )}
-                    <div className="mt-3 text-center">
+                    <div className="mt-3 text-center space-x-4">
                         <button className="underline text-blue-300" onClick={openCropModal}>Manage Tracked Crops</button>
+                        <button className="underline text-green-300" onClick={() => setImportModalOpen(true)}>Import from Planner</button>
                     </div>
                 </div>
                 {/* Time Display - always visible */}
@@ -648,9 +654,28 @@ const App: React.FC = () => {
                             )}
                         </div>
                     </div>
+    
+                    {/* Garden Plants Display */}
+                    {plants.length > 0 && (
+                        <div className="mt-4 bg-black/20 backdrop-blur-sm rounded-2xl p-4 shadow-xl border border-white/10">
+                            <h3 className="text-lg font-semibold text-white mb-4">🌿 Imported Garden Plants</h3>
+                            <div className="space-y-2">
+                                {plants.map((plant) => (
+                                    <PlantComponent
+                                        key={plant.id}
+                                        plant={plant}
+                                        onToggleWater={(plantId) => {
+                                            // This would typically update the plant's needsWater status
+                                            // For now, we'll just show the current status
+                                            console.log(`Toggle water for plant ${plantId}`);
+                                        }}
+                                    />
+                                ))}
+                            </div>
+                        </div>
+                    )}
+    
                 </div>
-
-
             </div>
             {isCropModalOpen && (
                 <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-60">
@@ -791,6 +816,11 @@ const App: React.FC = () => {
                     </div>
                 </div>
             )}
+            
+            <ImportModal
+                isOpen={isImportModalOpen}
+                onClose={() => setImportModalOpen(false)}
+            />
         </div>
     );
 };
