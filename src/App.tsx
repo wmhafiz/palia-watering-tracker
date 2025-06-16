@@ -170,10 +170,28 @@ const App: React.FC = () => {
     }, [cycleWateringState]);
 
     const toggleCropsWatered = () => {
-        setCropWateringState(prev => ({
-            ...prev,
-            cropsWatered: !prev.cropsWatered
-        }));
+        setCropWateringState(prev => {
+            const newWateredState = !prev.cropsWatered;
+
+            // If unchecking (going from watered to not watered), remove current cycle from history
+            if (!newWateredState && prev.cropsWatered) {
+                const currentCycleId = timeData.cycleId;
+                const updatedHistory = cycleWateringState.cycleHistory.filter(
+                    cycle => cycle.cycleId !== currentCycleId
+                );
+
+                const updatedCycleState = {
+                    cycleHistory: updatedHistory
+                };
+                setCycleWateringState(updatedCycleState);
+                localStorage.setItem('paliaCycleWateringState', JSON.stringify(updatedCycleState));
+            }
+
+            return {
+                ...prev,
+                cropsWatered: newWateredState
+            };
+        });
     };
 
     // Update document title
