@@ -381,91 +381,89 @@ const App: React.FC = () => {
                         </div>
                     </div>
                 </div>
-
-                {/* Time Display - always visible */}
-                <div className="bg-black/20 backdrop-blur-sm rounded-3xl p-6 shadow-2xl border border-white/10 flex flex-col items-center justify-center">
-                    {/* Time Display */}
-                    <div className="text-center space-y-4">
-                        <div className="text-4xl sm:text-8xl font-bold text-white font-mono tracking-wider">
-                            {timeData.clockTime}
-                        </div>
-                        <div className={`text-xl sm:text-4xl font-semibold ${getPeriodColor(timeData.partOfDay)}`}>
-                            {timeData.partOfDay}
-                        </div>
-                        <div className="text-lg sm:text-2xl text-gray-300 font-medium">
-                            {timeData.dayText}
-                        </div>
-
-                        <p className="text-md text-gray-400 font-medium">
-                            Palia week begins on Sundays 9 PM PST (UTC-8), which will show as "Day 1 Cycle 1". Each Day has 24 Cycles, the Week has 7 Days.
-                        </p>
+                {/* Watering Trackers - always visible */}
+                {/* Crop Watering Tracker */}
+                <div className="mt-4 bg-black/20 backdrop-blur-sm rounded-2xl p-4 shadow-xl border border-white/10">
+                    <div className="flex items-center justify-between mb-2">
+                        <h3 className="text-lg font-semibold text-white">🌱 Daily Crop Watering</h3>
+                        <div className="text-sm text-gray-300">Resets at 6:00 AM</div>
+                    </div>
+                    {trackedCrops.length === 0 ? (
+                        <div className="text-gray-400 text-center py-4">No crops tracked. </div>
+                    ) : (
+                        <>
+                            <div className="flex justify-end gap-2 mb-2">
+                                <button
+                                    className="px-3 py-1 rounded bg-green-600/80 text-white text-xs hover:bg-green-700"
+                                    onClick={() => {
+                                        const newWatered = Object.fromEntries(trackedCrops.map(crop => [crop, true]));
+                                        setCropWateringState(prev => ({ ...prev, watered: newWatered }));
+                                        updateCycleStatus(newWatered);
+                                    }}
+                                >Water All</button>
+                                <button
+                                    className="px-3 py-1 rounded bg-gray-400/80 text-white text-xs hover:bg-gray-500"
+                                    onClick={() => {
+                                        const newWatered = Object.fromEntries(trackedCrops.map(crop => [crop, false]));
+                                        setCropWateringState(prev => ({ ...prev, watered: newWatered }));
+                                        updateCycleStatus(newWatered);
+                                    }}
+                                >Water None</button>
+                            </div>
+                            <div className="space-y-2">
+                                {trackedCrops.map(cropName => {
+                                    const crop = allCrops.find(c => c.name === cropName);
+                                    if (!crop) return null;
+                                    return (
+                                        <CropListItem
+                                            key={cropName}
+                                            crop={crop}
+                                            onClick={() => {
+                                                setCropWateringState(prev => {
+                                                    const newWatered = {
+                                                        ...prev.watered,
+                                                        [cropName]: !prev.watered[cropName]
+                                                    };
+                                                    updateCycleStatus(newWatered);
+                                                    return { ...prev, watered: newWatered };
+                                                });
+                                            }}
+                                            rightContent={
+                                                <span className={`w-8 h-8 rounded-full border-2 flex items-center justify-center transition-colors duration-200 ${cropWateringState.watered[cropName]
+                                                    ? 'bg-green-500 border-green-500 text-white'
+                                                    : 'border-gray-400'
+                                                    }`}>
+                                                    {cropWateringState.watered[cropName] ? '✓' : '○'}
+                                                </span>
+                                            }
+                                        />
+                                    );
+                                })}
+                            </div>
+                        </>
+                    )}
+                    <div className="mt-3 text-center">
+                        <button className="underline text-blue-300" onClick={openCropModal}>Manage Tracked Crops</button>
                     </div>
                 </div>
-
-                {/* Watering Trackers - always visible */}
+                {/* Time Display - always visible */}
                 <div>
-                    {/* Crop Watering Tracker */}
-                    <div className="mt-4 bg-black/20 backdrop-blur-sm rounded-2xl p-4 shadow-xl border border-white/10">
-                        <div className="flex items-center justify-between mb-2">
-                            <h3 className="text-lg font-semibold text-white">🌱 Daily Crop Watering</h3>
-                            <div className="text-sm text-gray-300">Resets at 6:00 AM</div>
-                        </div>
-                        {trackedCrops.length === 0 ? (
-                            <div className="text-gray-400 text-center py-4">No crops tracked. </div>
-                        ) : (
-                            <>
-                                <div className="flex justify-end gap-2 mb-2">
-                                    <button
-                                        className="px-3 py-1 rounded bg-green-600/80 text-white text-xs hover:bg-green-700"
-                                        onClick={() => {
-                                            const newWatered = Object.fromEntries(trackedCrops.map(crop => [crop, true]));
-                                            setCropWateringState(prev => ({ ...prev, watered: newWatered }));
-                                            updateCycleStatus(newWatered);
-                                        }}
-                                    >Water All</button>
-                                    <button
-                                        className="px-3 py-1 rounded bg-gray-400/80 text-white text-xs hover:bg-gray-500"
-                                        onClick={() => {
-                                            const newWatered = Object.fromEntries(trackedCrops.map(crop => [crop, false]));
-                                            setCropWateringState(prev => ({ ...prev, watered: newWatered }));
-                                            updateCycleStatus(newWatered);
-                                        }}
-                                    >Water None</button>
-                                </div>
-                                <div className="space-y-2">
-                                    {trackedCrops.map(cropName => {
-                                        const crop = allCrops.find(c => c.name === cropName);
-                                        if (!crop) return null;
-                                        return (
-                                            <CropListItem
-                                                key={cropName}
-                                                crop={crop}
-                                                onClick={() => {
-                                                    setCropWateringState(prev => {
-                                                        const newWatered = {
-                                                            ...prev.watered,
-                                                            [cropName]: !prev.watered[cropName]
-                                                        };
-                                                        updateCycleStatus(newWatered);
-                                                        return { ...prev, watered: newWatered };
-                                                    });
-                                                }}
-                                                rightContent={
-                                                    <span className={`w-8 h-8 rounded-full border-2 flex items-center justify-center transition-colors duration-200 ${cropWateringState.watered[cropName]
-                                                        ? 'bg-green-500 border-green-500 text-white'
-                                                        : 'border-gray-400'
-                                                        }`}>
-                                                        {cropWateringState.watered[cropName] ? '✓' : '○'}
-                                                    </span>
-                                                }
-                                            />
-                                        );
-                                    })}
-                                </div>
-                            </>
-                        )}
-                        <div className="mt-3 text-center">
-                            <button className="underline text-blue-300" onClick={openCropModal}>Manage Tracked Crops</button>
+                    <div className="bg-black/20 backdrop-blur-sm rounded-3xl p-6 shadow-2xl border border-white/10 flex flex-col items-center justify-center">
+                        {/* Time Display */}
+                        <div className="text-center space-y-4">
+                            <div className="text-4xl sm:text-8xl font-bold text-white font-mono tracking-wider">
+                                {timeData.clockTime}
+                            </div>
+                            <div className={`text-xl sm:text-4xl font-semibold ${getPeriodColor(timeData.partOfDay)}`}>
+                                {timeData.partOfDay}
+                            </div>
+                            <div className="text-lg sm:text-2xl text-gray-300 font-medium">
+                                {timeData.dayText}
+                            </div>
+
+                            <p className="text-md text-gray-400 font-medium">
+                                Palia week begins on Sundays 9 PM PST (UTC-8), which will show as "Day 1 Cycle 1". Each Day has 24 Cycles, the Week has 7 Days.
+                            </p>
                         </div>
                     </div>
                     {/* Last 5 Cycles Watering Status */}
@@ -534,28 +532,30 @@ const App: React.FC = () => {
                         </div>
                     </div>
                 </div>
+
+
             </div>
             {isCropModalOpen && (
                 <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-60">
                     <div
                         className={`rounded-2xl shadow-2xl max-w-lg w-full p-6 relative bg-gradient-to-br ${getBackgroundGradient(timeData.partOfDay)} ${['Night', 'Evening'].includes(timeData.partOfDay) ? 'text-white' : 'text-gray-900'}`}
                     >
-                        <h2 className="text-2xl font-bold mb-4 text-gray-900">Select Crops to Track</h2>
+                        <h2 className="text-2xl font-bold mb-4 text-gray-300">Select Crops to Track</h2>
                         {/* Filters */}
                         <div className="flex flex-wrap gap-2 mb-4">
-                            <select className="border rounded px-2 py-1 text-sm" value={filterBuff} onChange={e => setFilterBuff(e.target.value)}>
+                            <select className="border rounded px-2 py-1 text-sm text-gray-300 bg-gray-800" value={filterBuff} onChange={e => setFilterBuff(e.target.value)}>
                                 <option value="">All Buffs</option>
                                 {unique(allCrops, 'garden_buff').map(buff => (
                                     <option key={String(buff)} value={String(buff)}>{String(buff)}</option>
                                 ))}
                             </select>
-                            <select className="border rounded px-2 py-1 text-sm" value={filterRarity} onChange={e => setFilterRarity(e.target.value)}>
+                            <select className="border rounded px-2 py-1 text-sm text-gray-300 bg-gray-800" value={filterRarity} onChange={e => setFilterRarity(e.target.value)}>
                                 <option value="">All Rarities</option>
                                 {unique(allCrops, 'rarity').map(rarity => (
                                     <option key={String(rarity)} value={String(rarity)}>{String(rarity)}</option>
                                 ))}
                             </select>
-                            <select className="border rounded px-2 py-1 text-sm" value={filterGroup} onChange={e => setFilterGroup(e.target.value)}>
+                            <select className="border rounded px-2 py-1 text-sm text-gray-300 bg-gray-800" value={filterGroup} onChange={e => setFilterGroup(e.target.value)}>
                                 <option value="">All Groups</option>
                                 {unique(allCrops, 'group').map(group => (
                                     <option key={String(group)} value={String(group)}>{String(group)}</option>
@@ -579,7 +579,7 @@ const App: React.FC = () => {
                                     onChange={e => setFilterPrice([filterPrice[0], Number(e.target.value)])}
                                     className="w-16"
                                 />
-                                <span className="text-xs text-gray-500">{filterPrice[0]} - {filterPrice[1]}</span>
+                                <span className="text-xs text-gray-300">{filterPrice[0]} - {filterPrice[1]}</span>
                             </div>
                             <button
                                 className="px-2 py-1 rounded bg-gray-200 text-gray-700 text-xs hover:bg-gray-300"
