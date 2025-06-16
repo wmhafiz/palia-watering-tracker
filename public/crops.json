@@ -1,0 +1,167 @@
+[
+    {
+        "name": "Apple",
+        "group": "Fruit",
+        "description": "Crunchy when raw and sweet when cooked, an apple a day keeps the healer away! Eat up!",
+        "rarity": "Uncommon",
+        "garden_buff": "Harvest Boost",
+        "harvest_time": "12+6+6+6 Days",
+        "base_value": 64,
+        "star_value": 96,
+        "picture_url": "images/65px-Apple.webp"
+    },
+    {
+        "name": "Batterfly Beans",
+        "group": "Crop",
+        "description": "A favorite snack for the batterflies that inhabit the Elderwood. Maybe they'll be your favorite too?",
+        "rarity": "Uncommon",
+        "garden_buff": "Harvest Boost",
+        "harvest_time": "6+2+2+2 Days",
+        "base_value": 23,
+        "star_value": 34,
+        "picture_url": "images/65px-Batterfly_Beans.webp"
+    },
+    {
+        "name": "Blueberries",
+        "group": "Fruit",
+        "description": "Feeling blue? Grab a handful of blueberries. They're sure to make you smile raw or baked!",
+        "rarity": "Uncommon",
+        "garden_buff": "Harvest Boost",
+        "harvest_time": "9+3+3+3 Days",
+        "base_value": 39,
+        "star_value": 58,
+        "picture_url": "images/65px-Blueberries.webp"
+    },
+    {
+        "name": "Bok Choy",
+        "group": "Vegetables",
+        "description": "Not only is this veggie thick and juicy, but healthy too. Get your daily dose of vitamins with each crunch!",
+        "rarity": "Common",
+        "garden_buff": "Weed Block",
+        "harvest_time": "3 Days",
+        "base_value": 30,
+        "star_value": 45,
+        "picture_url": "images/65px-Bok_Choy.webp"
+    },
+    {
+        "name": "Carrot",
+        "group": "Vegetables",
+        "description": "This sweet, orange, carrot will improve your eyesight, raw or cooked. It's full of vitamin see!",
+        "rarity": "Common",
+        "garden_buff": "Weed Block",
+        "harvest_time": "3 Days",
+        "base_value": 23,
+        "star_value": 34,
+        "picture_url": "images/65px-Carrot.webp"
+    },
+    {
+        "name": "Cotton",
+        "group": "Crop",
+        "description": "Fluffy cotton can be spun into fabric. This crop is not edible. Don't say you weren't warned.",
+        "rarity": "Common",
+        "garden_buff": "Quality Boost",
+        "harvest_time": "5 Days",
+        "base_value": 45,
+        "star_value": 67,
+        "picture_url": "images/65px-Cotton.webp"
+    },
+    {
+        "name": "Lettuce",
+        "group": "Vegetables",
+        "description": "Gain 135 Focus when consumed.",
+        "rarity": "Common",
+        "garden_buff": "None",
+        "harvest_time": "6 Days",
+        "base_value": 55,
+        "star_value": 82,
+        "picture_url": "images/65px-Lettuce.webp"
+    },
+    {
+        "name": "Napa Cabbage",
+        "group": "Vegetables",
+        "description": "Leafy, green, and the freshest on the scene, napa cabbage is just what you need. It's delicious and nutritious no matter how you cook it!",
+        "rarity": "Common",
+        "garden_buff": "Water Retain",
+        "harvest_time": "6 Days",
+        "base_value": 40,
+        "star_value": 60,
+        "picture_url": "images/65px-Napa_Cabbage.webp"
+    },
+    {
+        "name": "Onion",
+        "group": "Vegetables",
+        "description": "Cooked onions lend fragrant base to any dish. But some folks prefer them raw. Like Nai'o.",
+        "rarity": "Common",
+        "garden_buff": "Weed Block",
+        "harvest_time": "4 Days",
+        "base_value": 30,
+        "star_value": 45,
+        "picture_url": "images/65px-Onion.webp"
+    },
+    {
+        "name": "Potato",
+        "group": "Vegetables",
+        "description": "Boil 'em, mash 'em, stick 'em in a stew! Versatile potatoes add heartiness to any cooked meal.",
+        "rarity": "Common",
+        "garden_buff": "Water Retain",
+        "harvest_time": "5 Days",
+        "base_value": 45,
+        "star_value": 67,
+        "picture_url": "images/65px-Potato.webp"
+    },
+    {
+        "name": "Rice",
+        "group": "Crop",
+        "description": "Need a satisfying, fluffy, grain to cook your dish? Well, it's rice to meet you!",
+        "rarity": "Uncommon",
+        "garden_buff": "Harvest Boost",
+        "harvest_time": "3 Days",
+        "base_value": 27,
+        "star_value": 40,
+        "picture_url": "images/65px-Rice.webp"
+    },
+    {
+        "name": "Rockhopper Pumpkin",
+        "group": "Vegetables",
+        "description": "Which came first, the Rockhopper or the pumpkin? Scholars still can't decide.",
+        "rarity": "Common",
+        "garden_buff": "Quality Boost",
+        "harvest_time": "9+2+2+2 Days",
+        "base_value": 88,
+        "star_value": 132,
+        "picture_url": "images/65px-Rockhopper_Pumpkin.webp"
+    },
+    {
+        "name": "Spicy Pepper",
+        "group": "Vegetables",
+        "description": "These spicy peppers got a sick burn. Most people cook them. The truly brave eat them raw.",
+        "rarity": "Uncommon",
+        "garden_buff": "Quality Boost",
+        "harvest_time": "6+3+3+3 Days",
+        "base_value": 32,
+        "star_value": 48,
+        "picture_url": "images/65px-Spicy_Pepper.webp"
+    },
+    {
+        "name": "Tomato",
+        "group": "Vegetables",
+        "description": "This juicy, red tomato may have a saucy attitude, but it tastes great either raw or cooked.",
+        "rarity": "Common",
+        "garden_buff": "Water Retain",
+        "harvest_time": "4+2+2+2 Days",
+        "base_value": 23,
+        "star_value": 34,
+        "picture_url": "images/65px-Tomato.webp"
+    },
+    {
+        "name": "Wheat",
+        "group": "Crop",
+        "description": "Fee, fi, fo, fum! Don't you worry your pretty head, just grind this wheat to bake your bread.",
+        "rarity": "Uncommon",
+        "garden_buff": "Harvest Boost",
+        "harvest_time": "4 Days",
+        "base_value": 33,
+        "star_value": 49,
+        "picture_url": "images/65px-Wheat.webp"
+    }
+]
