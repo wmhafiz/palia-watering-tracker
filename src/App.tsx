@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo, useRef, useCallback } from 'react';
+import React, { useState, useEffect, useMemo, useCallback } from 'react';
 
 interface TimeData {
     clockTime: string;
@@ -66,7 +66,20 @@ const App: React.FC = () => {
     const [cropWateringState, setCropWateringState] = useState<CropWateringState>(() => {
         const saved = localStorage.getItem('paliaWateringState');
         if (saved) {
-            return JSON.parse(saved);
+            try {
+                const parsed = JSON.parse(saved);
+                // Validate structure
+                if (
+                    typeof parsed === 'object' &&
+                    parsed !== null &&
+                    typeof parsed.watered === 'object' &&
+                    typeof parsed.lastResetDay === 'string'
+                ) {
+                    return parsed;
+                }
+            } catch (e) { }
+            // If parsing or validation fails, reset localStorage
+            localStorage.removeItem('paliaWateringState');
         }
         return {
             watered: {},
@@ -77,7 +90,19 @@ const App: React.FC = () => {
     const [cycleWateringState, setCycleWateringState] = useState<CycleWateringState>(() => {
         const saved = localStorage.getItem('paliaCycleWateringState');
         if (saved) {
-            return JSON.parse(saved);
+            try {
+                const parsed = JSON.parse(saved);
+                // Validate structure
+                if (
+                    typeof parsed === 'object' &&
+                    parsed !== null &&
+                    Array.isArray(parsed.cycleHistory)
+                ) {
+                    return parsed;
+                }
+            } catch (e) { }
+            // If parsing or validation fails, reset localStorage
+            localStorage.removeItem('paliaCycleWateringState');
         }
         return {
             cycleHistory: []
@@ -86,7 +111,17 @@ const App: React.FC = () => {
 
     const [trackedCrops, setTrackedCrops] = useState<string[]>(() => {
         const saved = localStorage.getItem('paliaTrackedCrops');
-        if (saved) return JSON.parse(saved);
+        if (saved) {
+            try {
+                const parsed = JSON.parse(saved);
+                // Validate structure
+                if (Array.isArray(parsed) && parsed.every(item => typeof item === 'string')) {
+                    return parsed;
+                }
+            } catch (e) { }
+            // If parsing or validation fails, reset localStorage
+            localStorage.removeItem('paliaTrackedCrops');
+        }
         return [];
     });
 
@@ -361,8 +396,8 @@ const App: React.FC = () => {
                             />
                         </svg>
                     </div>
-                    {/* Legend - hidden on small screens */}
-                    <div className="mt-6 flex flex-row gap-2 items-center justify-center text-sm">
+                    {/* Legend - responsive row/column */}
+                    <div className="mt-6 grid grid-cols-2 gap-2 text-sm max-w-[300px] mx-auto">
                         <div className="flex items-center space-x-2">
                             <div className="w-3 h-3 rounded-full bg-amber-400"></div>
                             <span className="text-gray-300">Morning (3-6)</span>
@@ -462,7 +497,7 @@ const App: React.FC = () => {
                             </div>
 
                             <p className="text-md text-gray-400 font-medium">
-                                Palia week begins on Sundays 9 PM PST (UTC-8), which will show as "Day 1 Cycle 1". Each Day has 24 Cycles, the Week has 7 Days.
+                                Each Day has 24 Cycles, the Week has 7 Days.
                             </p>
                         </div>
                     </div>
