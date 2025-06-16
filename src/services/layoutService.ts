@@ -9,7 +9,7 @@ import {
   LayoutOperationResult, 
   LayoutSearchOptions 
 } from '../types/layout';
-import { parseGridData, generateCropSummary } from './plannerService';
+import { parseGridData } from './plannerService';
 
 /**
  * Default configuration for the layout service
