@@ -6,6 +6,7 @@ interface CropSummaryComponentProps {
   onMarkAsWatered?: (cropType: string) => void;
   onMarkAllAsWatered?: () => void;
   className?: string;
+  hideWateringStatus?: boolean;
 }
 
 /**
@@ -33,7 +34,8 @@ export const CropSummaryComponent: React.FC<CropSummaryComponentProps> = ({
   cropSummary,
   onMarkAsWatered,
   onMarkAllAsWatered,
-  className = ''
+  className = '',
+  hideWateringStatus = false
 }) => {
   const getCropImage = (cropType: string): string => {
     const imageName = CROP_IMAGE_MAP[cropType];
@@ -87,37 +89,44 @@ export const CropSummaryComponent: React.FC<CropSummaryComponentProps> = ({
               Crop Summary
             </h3>
             <p className="text-sm text-gray-600">
-              {cropSummary.totalPlants} plants • {cropSummary.plantsNeedingWater} need water
+              {hideWateringStatus
+                ? `${cropSummary.totalPlants} plants`
+                : `${cropSummary.totalPlants} plants • ${cropSummary.plantsNeedingWater} need water`
+              }
             </p>
           </div>
-          <div className="text-right">
-            <div className="text-2xl font-bold text-gray-800">
-              {cropSummary.wateringPercentage.toFixed(0)}%
+          {!hideWateringStatus && (
+            <div className="text-right">
+              <div className="text-2xl font-bold text-gray-800">
+                {cropSummary.wateringPercentage.toFixed(0)}%
+              </div>
+              <div className="text-xs text-gray-500">need water</div>
             </div>
-            <div className="text-xs text-gray-500">need water</div>
-          </div>
+          )}
         </div>
 
         {/* Progress Bar */}
-        <div className="mt-3">
-          <div className="flex items-center justify-between text-xs text-gray-600 mb-1">
-            <span>Watering Progress</span>
-            <span>
-              {cropSummary.totalPlants - cropSummary.plantsNeedingWater} / {cropSummary.totalPlants} watered
-            </span>
+        {!hideWateringStatus && (
+          <div className="mt-3">
+            <div className="flex items-center justify-between text-xs text-gray-600 mb-1">
+              <span>Watering Progress</span>
+              <span>
+                {cropSummary.totalPlants - cropSummary.plantsNeedingWater} / {cropSummary.totalPlants} watered
+              </span>
+            </div>
+            <div className="w-full bg-gray-200 rounded-full h-2">
+              <div
+                className="bg-green-500 h-2 rounded-full transition-all duration-300"
+                style={{
+                  width: `${Math.max(0, 100 - cropSummary.wateringPercentage)}%`
+                }}
+              />
+            </div>
           </div>
-          <div className="w-full bg-gray-200 rounded-full h-2">
-            <div 
-              className="bg-green-500 h-2 rounded-full transition-all duration-300"
-              style={{ 
-                width: `${Math.max(0, 100 - cropSummary.wateringPercentage)}%` 
-              }}
-            />
-          </div>
-        </div>
+        )}
 
         {/* Quick Actions */}
-        {cropSummary.plantsNeedingWater > 0 && onMarkAllAsWatered && (
+        {!hideWateringStatus && cropSummary.plantsNeedingWater > 0 && onMarkAllAsWatered && (
           <div className="mt-3">
             <button
               onClick={onMarkAllAsWatered}
@@ -167,34 +176,38 @@ export const CropSummaryComponent: React.FC<CropSummaryComponentProps> = ({
                     <span className="text-xs text-gray-600">
                       {summary.total} plant{summary.total !== 1 ? 's' : ''}
                     </span>
-                    <span className={`text-xs px-2 py-0.5 rounded-full ${status.bgColor} ${status.color}`}>
-                      {status.text}
-                    </span>
+                    {!hideWateringStatus && (
+                      <span className={`text-xs px-2 py-0.5 rounded-full ${status.bgColor} ${status.color}`}>
+                        {status.text}
+                      </span>
+                    )}
                   </div>
                 </div>
 
                 {/* Watering Status */}
-                <div className="flex-shrink-0 text-right">
-                  {summary.needingWater > 0 ? (
-                    <div className="space-y-1">
-                      <div className="text-sm font-medium text-red-600">
-                        {summary.needingWater} need water
+                {!hideWateringStatus && (
+                  <div className="flex-shrink-0 text-right">
+                    {summary.needingWater > 0 ? (
+                      <div className="space-y-1">
+                        <div className="text-sm font-medium text-red-600">
+                          {summary.needingWater} need water
+                        </div>
+                        {onMarkAsWatered && (
+                          <button
+                            onClick={() => onMarkAsWatered(cropType)}
+                            className="text-xs px-2 py-1 bg-blue-100 text-blue-700 rounded hover:bg-blue-200 transition-colors"
+                          >
+                            Mark Watered
+                          </button>
+                        )}
                       </div>
-                      {onMarkAsWatered && (
-                        <button
-                          onClick={() => onMarkAsWatered(cropType)}
-                          className="text-xs px-2 py-1 bg-blue-100 text-blue-700 rounded hover:bg-blue-200 transition-colors"
-                        >
-                          Mark Watered
-                        </button>
-                      )}
-                    </div>
-                  ) : (
-                    <div className="text-sm font-medium text-green-600">
-                      ✅ All watered
-                    </div>
-                  )}
-                </div>
+                    ) : (
+                      <div className="text-sm font-medium text-green-600">
+                        ✅ All watered
+                      </div>
+                    )}
+                  </div>
+                )}
               </div>
             );
           })}

@@ -536,7 +536,7 @@ export async function parseSaveCode(input: string): Promise<Plant[]> {
         plants.push({
           id: uuidv4(),
           name: cropType,
-          needsWater: i < summary.needingWater
+          needsWater: false
         });
       }
     }
