@@ -26,7 +26,7 @@ const CROP_IMAGE_MAP: { [key: string]: string } = {
   'Spicy Pepper': '65px-Spicy_Pepper.webp',
   'Tomato': '65px-Tomato.webp',
   'Wheat': '65px-Wheat.webp',
-  'Corn': '65px-Wheat.webp', // Fallback to wheat for corn
+  'Corn': 'Corn.png',
 };
 
 /**
@@ -55,6 +55,32 @@ export const TileComponent: React.FC<TileComponentProps> = ({
   const getCropImage = (cropType: string): string => {
     const imageName = CROP_IMAGE_MAP[cropType];
     return imageName ? `/images/${imageName}` : '/images/65px-Wheat.webp'; // Fallback
+  };
+
+  const getCropEmoji = (cropType: string): string => {
+    switch (cropType) {
+      case 'Corn': return '🌽';
+      case 'Tomato': return '🍅';
+      case 'Wheat': return '🌾';
+      case 'Rice': return '🌾';
+      case 'Potato': return '🥔';
+      case 'Carrot': return '🥕';
+      case 'Onion': return '🧅';
+      case 'Lettuce': return '🥬';
+      case 'Cotton': return '🌱';
+      case 'Apple': return '🍎';
+      case 'Blueberry': return '🫐';
+      case 'Bok Choy': return '🥬';
+      case 'Napa Cabbage': return '🥬';
+      case 'Spicy Pepper': return '🌶️';
+      case 'Batterfly Bean': return '🫘';
+      case 'Rockhopper Pumpkin': return '🎃';
+      default: return '';
+    }
+  };
+
+  const isEmojiCrop = (cropType: string): boolean => {
+    return getCropEmoji(cropType) !== '';
   };
 
   const renderTileContent = () => {
@@ -90,16 +116,22 @@ export const TileComponent: React.FC<TileComponentProps> = ({
         onClick={handleClick}
       >
         {/* Crop Image */}
-        <img
-          src={getCropImage(tile.cropType)}
-          alt={tile.cropType}
-          className="w-full h-full object-contain p-0.5"
-          onError={(e) => {
-            // Fallback to wheat image if crop image fails to load
-            const target = e.target as HTMLImageElement;
-            target.src = '/images/65px-Wheat.webp';
-          }}
-        />
+        {isEmojiCrop(tile.cropType) ? (
+          <div className="w-full h-full flex items-center justify-center text-lg p-0.5">
+            {getCropEmoji(tile.cropType)}
+          </div>
+        ) : (
+          <img
+            src={getCropImage(tile.cropType)}
+            alt={tile.cropType}
+            className="w-full h-full object-contain p-0.5"
+            onError={(e) => {
+              // Fallback to wheat image if crop image fails to load
+              const target = e.target as HTMLImageElement;
+              target.src = '/images/65px-Wheat.webp';
+            }}
+          />
+        )}
         
         {/* Fertilizer Indicator */}
         {tile.fertilizerType && tile.fertilizerType !== 'None' && (

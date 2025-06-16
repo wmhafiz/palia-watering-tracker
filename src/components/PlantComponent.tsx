@@ -18,12 +18,13 @@ export const PlantComponent: React.FC<PlantComponentProps> = ({ plant, onToggleW
       case 'Lettuce': return '🥬';
       case 'Cotton': return '🌱';
       case 'Apple': return '🍎';
-      case 'Blueberries': return '🫐';
+      case 'Blueberry': return '🫐';
       case 'Bok Choy': return '🥬';
       case 'Napa Cabbage': return '🥬';
       case 'Spicy Pepper': return '🌶️';
       case 'Batterfly Beans': return '🫘';
       case 'Rockhopper Pumpkin': return '🎃';
+      case 'Corn': return '🌽';
       default: return '🌱';
     }
   };

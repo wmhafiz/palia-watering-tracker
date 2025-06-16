@@ -27,6 +27,7 @@ export const CropWateringItem: React.FC<CropWateringItemProps> = ({
   const displayName = cropData?.name || cropType;
   const imageUrl = cropData?.picture_url;
   const harvestTime = cropData?.harvest_time;
+
   const baseValue = cropData?.base_value;
   const starValue = cropData?.star_value;
   const gardenBuff = cropData?.garden_buff;
@@ -58,17 +59,11 @@ export const CropWateringItem: React.FC<CropWateringItemProps> = ({
     >
       {/* Crop Image */}
       <div className="flex-shrink-0">
-        {imageUrl ? (
-          <img 
-            src={imageUrl} 
-            alt={displayName} 
-            className="w-12 h-12 object-contain rounded bg-gray-100 border border-gray-300" 
+      <img
+            src={imageUrl}
+            alt={displayName}
+            className="w-12 h-12 object-contain rounded bg-gray-100 border border-gray-300"
           />
-        ) : (
-          <div className="w-12 h-12 bg-gray-200 rounded border border-gray-300 flex items-center justify-center">
-            <span className="text-gray-500 text-xs">🌱</span>
-          </div>
-        )}
       </div>
 
       {/* Crop Info */}

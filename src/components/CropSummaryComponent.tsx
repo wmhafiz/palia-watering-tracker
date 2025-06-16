@@ -27,7 +27,7 @@ const CROP_IMAGE_MAP: { [key: string]: string } = {
   'Spicy Pepper': '65px-Spicy_Pepper.webp',
   'Tomato': '65px-Tomato.webp',
   'Wheat': '65px-Wheat.webp',
-  'Corn': '65px-Wheat.webp', // Fallback to wheat for corn
+  'Corn': 'Corn.png',
 };
 
 export const CropSummaryComponent: React.FC<CropSummaryComponentProps> = ({
@@ -151,15 +151,15 @@ export const CropSummaryComponent: React.FC<CropSummaryComponentProps> = ({
               >
                 {/* Crop Image */}
                 <div className="flex-shrink-0">
-                  <img
-                    src={getCropImage(cropType)}
-                    alt={cropType}
-                    className="w-8 h-8 object-contain"
-                    onError={(e) => {
-                      const target = e.target as HTMLImageElement;
-                      target.src = '/images/65px-Wheat.webp';
-                    }}
-                  />
+                <img
+                      src={getCropImage(cropType)}
+                      alt={cropType}
+                      className="w-8 h-8 object-contain"
+                      onError={(e) => {
+                        const target = e.target as HTMLImageElement;
+                        target.src = '/images/65px-Wheat.webp';
+                      }}
+                    />
                 </div>
 
                 {/* Crop Info */}

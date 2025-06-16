@@ -1,6 +1,5 @@
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { ImportModal } from './components/ImportModal';
-import { PlantComponent } from './components/PlantComponent';
 import { CropWateringItem } from './components/CropWateringItem';
 import { MigrationBanner } from './components/MigrationBanner';
 import { useGardenStore } from './hooks/useGardenStore';

@@ -22,7 +22,7 @@
         "picture_url": "images/65px-Batterfly_Beans.webp"
     },
     {
-        "name": "Blueberries",
+        "name": "Blueberry",
         "group": "Fruit",
         "description": "Feeling blue? Grab a handful of blueberries. They're sure to make you smile raw or baked!",
         "rarity": "Uncommon",
@@ -31,6 +31,17 @@
         "base_value": 39,
         "star_value": 58,
         "picture_url": "images/65px-Blueberries.webp"
+    },
+    {
+        "name": "Corn",
+        "group": "Vegetables",
+        "description": "Juicy kernels of golden corn, perfect for grilling, boiling, or popping. A staple for any summer feast!",
+        "rarity": "Uncommon",
+        "garden_buff": "Water Retain",
+        "harvest_time": "6+3+3+3 Days",
+        "base_value": 41,
+        "star_value": 61,
+        "picture_url": "images/Corn.png"
     },
     {
         "name": "Bok Choy",
