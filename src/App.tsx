@@ -8,8 +8,23 @@ interface TimeData {
     hours: number;
 }
 
+interface CropWateringState {
+    cropsWatered: boolean;
+    lastResetDay: string;
+}
+
 const App: React.FC = () => {
     const [currentTime, setCurrentTime] = useState<number>(Date.now());
+    const [cropWateringState, setCropWateringState] = useState<CropWateringState>(() => {
+        const saved = localStorage.getItem('paliaWateringState');
+        if (saved) {
+            return JSON.parse(saved);
+        }
+        return {
+            cropsWatered: false,
+            lastResetDay: ''
+        };
+    });
 
     useEffect(() => {
         const interval = setInterval(() => {
@@ -69,19 +84,39 @@ const App: React.FC = () => {
         };
     }, [currentTime]);
 
+    // Handle daily reset at 6am game time
+    useEffect(() => {
+        const currentDay = timeData.dayText;
+        const isNewDay = currentDay !== cropWateringState.lastResetDay;
+        const is6amOrLater = timeData.hours >= 6;
+
+        // Reset crops if it's a new day and it's 6am or later
+        if (isNewDay && is6amOrLater) {
+            const resetState: CropWateringState = {
+                cropsWatered: false,
+                lastResetDay: currentDay
+            };
+            setCropWateringState(resetState);
+            localStorage.setItem('paliaWateringState', JSON.stringify(resetState));
+        }
+    }, [timeData.dayText, timeData.hours, cropWateringState.lastResetDay]);
+
+    // Save state to localStorage whenever it changes
+    useEffect(() => {
+        localStorage.setItem('paliaWateringState', JSON.stringify(cropWateringState));
+    }, [cropWateringState]);
+
+    const toggleCropsWatered = () => {
+        setCropWateringState(prev => ({
+            ...prev,
+            cropsWatered: !prev.cropsWatered
+        }));
+    };
+
     // Update document title
     useEffect(() => {
         document.title = `${timeData.clockTime} - ${timeData.partOfDay} - Palia Clock`;
     }, [timeData.clockTime, timeData.partOfDay]);
-
-    const getTimeSegments = () => {
-        return [
-            { start: 0, end: 90, color: 'fill-palia-night', period: 'Night' }, // 21:00 - 03:00 (270° - 90°)
-            { start: 90, end: 180, color: 'fill-palia-morning', period: 'Morning' }, // 03:00 - 06:00 (90° - 180°)
-            { start: 180, end: 360, color: 'fill-palia-day', period: 'Day' }, // 06:00 - 18:00 (180° - 360°)
-            { start: 270, end: 360, color: 'fill-palia-evening', period: 'Evening' }, // 18:00 - 21:00 (270° - 360°)
-        ];
-    };
 
     const getPeriodColor = (period: string): string => {
         switch (period) {
@@ -230,6 +265,40 @@ const App: React.FC = () => {
                             <span className="text-gray-300">Night (21-3)</span>
                         </div>
                     </div>
+                </div>
+
+                {/* Crop Watering Tracker */}
+                <div className="mt-4 bg-black/20 backdrop-blur-sm rounded-2xl p-4 shadow-xl border border-white/10">
+                    <div className="flex items-center justify-between mb-2">
+                        <h3 className="text-lg font-semibold text-white">🌱 Daily Crop Watering</h3>
+                        <div className="text-sm text-gray-300">
+                            Resets at 6:00 AM
+                        </div>
+                    </div>
+
+                    <button
+                        onClick={toggleCropsWatered}
+                        className={`w-full p-4 rounded-xl transition-all duration-200 flex items-center justify-center space-x-3 ${cropWateringState.cropsWatered
+                            ? 'bg-green-600/30 border-2 border-green-500/50 text-green-300'
+                            : 'bg-gray-700/30 border-2 border-gray-600/50 text-white hover:border-green-400/50'
+                            }`}
+                    >
+                        <div className={`w-8 h-8 rounded-full border-2 flex items-center justify-center transition-colors duration-200 ${cropWateringState.cropsWatered
+                            ? 'bg-green-500 border-green-500 text-white'
+                            : 'border-gray-400'
+                            }`}>
+                            {cropWateringState.cropsWatered && '✓'}
+                        </div>
+                        <span className="text-xl font-semibold">
+                            {cropWateringState.cropsWatered ? 'Crops Watered Today!' : 'Mark Crops as Watered'}
+                        </span>
+                    </button>
+
+                    {cropWateringState.cropsWatered && (
+                        <div className="mt-3 p-3 bg-green-600/20 border border-green-500/30 rounded-lg text-center">
+                            <span className="text-green-300 font-medium">🎉 Great job! Your crops are watered for today!</span>
+                        </div>
+                    )}
                 </div>
 
                 {/* Footer */}
