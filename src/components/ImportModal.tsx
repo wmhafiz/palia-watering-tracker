@@ -1,5 +1,6 @@
 import React, { useState, useCallback, useEffect } from 'react';
 import { useGardenStore } from '../hooks/useGardenStore';
+import { useUnifiedGardenStore } from '../hooks/useUnifiedGardenStore';
 import { parseGridData } from '../services/plannerService';
 import { ParsedGardenData, SavedLayout } from '../types/layout';
 import { GridPreview } from './GridPreview';
@@ -29,6 +30,7 @@ export const ImportModal: React.FC<ImportModalProps> = ({ isOpen, onClose }) => 
   const [sortBy, setSortBy] = useState<'name' | 'createdAt' | 'lastModified'>('lastModified');
   
   const { setPlants } = useGardenStore();
+  const { importPlantsFromGarden } = useUnifiedGardenStore();
 
   const handleImport = useCallback(async () => {
     setLoading(true);
@@ -136,29 +138,30 @@ export const ImportModal: React.FC<ImportModalProps> = ({ isOpen, onClose }) => 
   }, [loadSavedLayouts]);
 
   const handleSaveLayout = useCallback(async () => {
-    if (!gardenData || !layoutName.trim()) return;
-    
-    try {
-      // Convert grid data to plants for the existing store
-      // Remove watered states as per Task 1 requirement
-      const plants = [];
-      for (const [cropType, summary] of Object.entries(gardenData.cropSummary.cropBreakdown)) {
-        for (let i = 0; i < summary.total; i++) {
-          plants.push({
-            id: `${cropType}-${i}`,
-            name: cropType,
-            needsWater: false // Always set to false to remove watered states
-          });
-        }
+      if (!gardenData || !layoutName.trim()) return;
+      
+      try {
+          // Convert grid data to plants for both stores
+          const plants = [];
+          for (const [cropType, summary] of Object.entries(gardenData.cropSummary.cropBreakdown)) {
+              for (let i = 0; i < summary.total; i++) {
+                  plants.push({
+                      id: `${cropType}-${i}`,
+                      name: cropType,
+                      needsWater: false // Always set to false to remove watered states
+                  });
+              }
+          }
+          
+          // Update both stores
+          setPlants(plants);
+          importPlantsFromGarden(plants);
+          
+          handleClose();
+      } catch (err) {
+          setError(err instanceof Error ? err.message : 'Failed to load layout');
       }
-      
-      setPlants(plants);
-      
-      handleClose();
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to load layout');
-    }
-  }, [gardenData, layoutName, setPlants, handleClose]);
+  }, [gardenData, layoutName, setPlants, importPlantsFromGarden, handleClose]);
 
   const handleBackToImport = useCallback(() => {
     setShowPreview(false);

@@ -1,7 +1,10 @@
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { ImportModal } from './components/ImportModal';
 import { PlantComponent } from './components/PlantComponent';
+import { CropWateringItem } from './components/CropWateringItem';
+import { MigrationBanner } from './components/MigrationBanner';
 import { useGardenStore } from './hooks/useGardenStore';
+import { useUnifiedGardenStore, initializeUnifiedStore } from './hooks/useUnifiedGardenStore';
 
 interface TimeData {
     clockTime: string;
@@ -9,11 +12,6 @@ interface TimeData {
     dayText: string;
     dialRotation: number;
     hours: number;
-}
-
-interface CropWateringState {
-    watered: { [cropName: string]: boolean };
-    lastResetDay: string;
 }
 
 interface CycleWateringState {
@@ -66,30 +64,7 @@ const CropListItem: React.FC<{
 
 const App: React.FC = () => {
     const [currentTime, setCurrentTime] = useState<number>(Date.now());
-    const [cropWateringState, setCropWateringState] = useState<CropWateringState>(() => {
-        const saved = localStorage.getItem('paliaWateringState');
-        if (saved) {
-            try {
-                const parsed = JSON.parse(saved);
-                // Validate structure
-                if (
-                    typeof parsed === 'object' &&
-                    parsed !== null &&
-                    typeof parsed.watered === 'object' &&
-                    typeof parsed.lastResetDay === 'string'
-                ) {
-                    return parsed;
-                }
-            } catch (e) { }
-            // If parsing or validation fails, reset localStorage
-            localStorage.removeItem('paliaWateringState');
-        }
-        return {
-            watered: {},
-            lastResetDay: ''
-        };
-    });
-
+    
     const [cycleWateringState, setCycleWateringState] = useState<CycleWateringState>(() => {
         const saved = localStorage.getItem('paliaCycleWateringState');
         if (saved) {
@@ -112,22 +87,6 @@ const App: React.FC = () => {
         };
     });
 
-    const [trackedCrops, setTrackedCrops] = useState<string[]>(() => {
-        const saved = localStorage.getItem('paliaTrackedCrops');
-        if (saved) {
-            try {
-                const parsed = JSON.parse(saved);
-                // Validate structure
-                if (Array.isArray(parsed) && parsed.every(item => typeof item === 'string')) {
-                    return parsed;
-                }
-            } catch (e) { }
-            // If parsing or validation fails, reset localStorage
-            localStorage.removeItem('paliaTrackedCrops');
-        }
-        return [];
-    });
-
     const [isCropModalOpen, setIsCropModalOpen] = useState(false);
     const [isImportModalOpen, setImportModalOpen] = useState(false);
     const [allCrops, setAllCrops] = useState<any[]>([]);
@@ -137,6 +96,26 @@ const App: React.FC = () => {
     const [filterRarity, setFilterRarity] = useState('');
     const [filterGroup, setFilterGroup] = useState('');
     const [filterPrice, setFilterPrice] = useState([0, 999]);
+    const [showMigrationBanner, setShowMigrationBanner] = useState(true);
+
+    // Use unified store
+    const {
+        trackedCrops,
+        dailyWateringState,
+        isInitialized,
+        addCropManually,
+        removeCrop,
+        importPlantsFromGarden,
+        toggleCropWatered,
+        waterAllCrops,
+        waterNoneCrops,
+        resetDailyWatering
+    } = useUnifiedGardenStore();
+
+    // Initialize unified store on mount
+    useEffect(() => {
+        initializeUnifiedStore();
+    }, []);
 
     useEffect(() => {
         const interval = setInterval(() => {
@@ -214,23 +193,18 @@ const App: React.FC = () => {
             .then(data => setAllCrops(data.sort((a: any, b: any) => a.base_value - b.base_value)));
     }, []);
 
+    // Handle daily reset logic with unified store
     useEffect(() => {
-        localStorage.setItem('paliaTrackedCrops', JSON.stringify(trackedCrops));
-    }, [trackedCrops]);
-
-    useEffect(() => {
+        if (!isInitialized) return;
+        
         const currentDay = timeData.dayText;
-        const isNewDay = currentDay !== cropWateringState.lastResetDay;
+        const isNewDay = currentDay !== dailyWateringState.lastResetDay;
         const is6amOrLater = timeData.hours >= 6;
+        
         if (isNewDay && is6amOrLater) {
-            const resetState: CropWateringState = {
-                watered: Object.fromEntries(trackedCrops.map(crop => [crop, false])),
-                lastResetDay: currentDay
-            };
-            setCropWateringState(resetState);
-            localStorage.setItem('paliaWateringState', JSON.stringify(resetState));
+            resetDailyWatering(currentDay);
         }
-    }, [timeData.dayText, timeData.hours, cropWateringState.lastResetDay, trackedCrops]);
+    }, [timeData.dayText, timeData.hours, dailyWateringState.lastResetDay, isInitialized, resetDailyWatering]);
 
     useEffect(() => {
         localStorage.setItem('paliaCycleWateringState', JSON.stringify(cycleWateringState));
@@ -262,17 +236,22 @@ const App: React.FC = () => {
     };
 
     const openCropModal = useCallback(() => {
-        setTempSelectedCrops(trackedCrops);
+        setTempSelectedCrops(trackedCrops.map(crop => crop.cropType));
         setIsCropModalOpen(true);
     }, [trackedCrops]);
+    
     const closeCropModal = useCallback(() => setIsCropModalOpen(false), []);
+    
     const handleTrackedCropsChange = (newTracked: string[]) => {
-        setTrackedCrops(newTracked);
-        // Also reset watering state for new crops
-        setCropWateringState(prev => ({
-            watered: Object.fromEntries(newTracked.map(crop => [crop, prev.watered[crop] || false])),
-            lastResetDay: prev.lastResetDay
-        }));
+        const currentCropTypes = trackedCrops.map(crop => crop.cropType);
+        
+        // Add new crops
+        const toAdd = newTracked.filter(cropType => !currentCropTypes.includes(cropType));
+        toAdd.forEach(cropType => addCropManually(cropType));
+        
+        // Remove crops that are no longer selected
+        const toRemove = currentCropTypes.filter(cropType => !newTracked.includes(cropType));
+        toRemove.forEach(cropType => removeCrop(cropType));
     };
 
     // Helper to get unique values for dropdowns
@@ -289,8 +268,8 @@ const App: React.FC = () => {
     });
 
     // Helper to update cycle status based on watered crops
-    const updateCycleStatus = (watered: { [cropName: string]: boolean }) => {
-        const allWatered = trackedCrops.length > 0 && trackedCrops.every(crop => watered[crop]);
+    const updateCycleStatus = useCallback(() => {
+        const allWatered = trackedCrops.length > 0 && trackedCrops.every(crop => crop.isWatered);
         setCycleWateringState(prev => {
             const exists = prev.cycleHistory.some(c => c.cycleId === timeData.cycleId);
             let newHistory;
@@ -306,10 +285,30 @@ const App: React.FC = () => {
             }
             return { ...prev, cycleHistory: newHistory };
         });
-    };
+    }, [trackedCrops, timeData.cycleId, timeData.dayText]);
+
+    // Update cycle status when crops change
+    useEffect(() => {
+        if (isInitialized && trackedCrops.length > 0) {
+            updateCycleStatus();
+        }
+    }, [trackedCrops, isInitialized, updateCycleStatus]);
+
+    // Handle import from planner
+    const handleImportFromPlanner = useCallback(() => {
+        if (plants.length > 0) {
+            importPlantsFromGarden(plants);
+        }
+        setImportModalOpen(true);
+    }, [plants, importPlantsFromGarden]);
 
     return (
         <div className={`min-h-screen bg-gradient-to-br ${getBackgroundGradient(timeData.partOfDay)} flex items-center justify-center p-4`}>
+            {/* Migration Banner */}
+            {showMigrationBanner && (
+                <MigrationBanner onMigrationComplete={() => setShowMigrationBanner(false)} />
+            )}
+            
             <div className="w-full mx-auto grid grid-cols-1 md:grid-cols-3 gap-3">
 
                 {/* Clock SVG - hidden on small screens */}
@@ -536,46 +535,31 @@ const App: React.FC = () => {
                                 <button
                                     className="px-3 py-1 rounded bg-green-600/80 text-white text-xs hover:bg-green-700"
                                     onClick={() => {
-                                        const newWatered = Object.fromEntries(trackedCrops.map(crop => [crop, true]));
-                                        setCropWateringState(prev => ({ ...prev, watered: newWatered }));
-                                        updateCycleStatus(newWatered);
+                                        waterAllCrops();
+                                        updateCycleStatus();
                                     }}
                                 >Water All</button>
                                 <button
                                     className="px-3 py-1 rounded bg-gray-400/80 text-white text-xs hover:bg-gray-500"
                                     onClick={() => {
-                                        const newWatered = Object.fromEntries(trackedCrops.map(crop => [crop, false]));
-                                        setCropWateringState(prev => ({ ...prev, watered: newWatered }));
-                                        updateCycleStatus(newWatered);
+                                        waterNoneCrops();
+                                        updateCycleStatus();
                                     }}
                                 >Water None</button>
                             </div>
                             <div className="space-y-2">
-                                {trackedCrops.map(cropName => {
-                                    const crop = allCrops.find(c => c.name === cropName);
-                                    if (!crop) return null;
+                                {trackedCrops.map(trackedCrop => {
+                                    const cropData = allCrops.find(c => c.name === trackedCrop.cropType);
                                     return (
-                                        <CropListItem
-                                            key={cropName}
-                                            crop={crop}
-                                            onClick={() => {
-                                                setCropWateringState(prev => {
-                                                    const newWatered = {
-                                                        ...prev.watered,
-                                                        [cropName]: !prev.watered[cropName]
-                                                    };
-                                                    updateCycleStatus(newWatered);
-                                                    return { ...prev, watered: newWatered };
-                                                });
+                                        <CropWateringItem
+                                            key={trackedCrop.cropType}
+                                            trackedCrop={trackedCrop}
+                                            cropData={cropData}
+                                            onToggle={() => {
+                                                toggleCropWatered(trackedCrop.cropType);
+                                                updateCycleStatus();
                                             }}
-                                            rightContent={
-                                                <span className={`w-8 h-8 rounded-full border-2 flex items-center justify-center transition-colors duration-200 ${cropWateringState.watered[cropName]
-                                                    ? 'bg-green-500 border-green-500 text-white'
-                                                    : 'border-gray-400'
-                                                    }`}>
-                                                    {cropWateringState.watered[cropName] ? '✓' : '○'}
-                                                </span>
-                                            }
+                                            showDetails={true}
                                         />
                                     );
                                 })}
@@ -584,7 +568,7 @@ const App: React.FC = () => {
                     )}
                     <div className="mt-3 text-center space-x-4">
                         <button className="underline text-blue-300" onClick={openCropModal}>Manage Tracked Crops</button>
-                        <button className="underline text-green-300" onClick={() => setImportModalOpen(true)}>Import from Planner</button>
+                        <button className="underline text-green-300" onClick={handleImportFromPlanner}>Import from Planner</button>
                     </div>
                 </div>
                 {/* Time Display - always visible */}
@@ -654,26 +638,6 @@ const App: React.FC = () => {
                             )}
                         </div>
                     </div>
-    
-                    {/* Garden Plants Display */}
-                    {plants.length > 0 && (
-                        <div className="mt-4 bg-black/20 backdrop-blur-sm rounded-2xl p-4 shadow-xl border border-white/10">
-                            <h3 className="text-lg font-semibold text-white mb-4">🌿 Imported Garden Plants</h3>
-                            <div className="space-y-2">
-                                {plants.map((plant) => (
-                                    <PlantComponent
-                                        key={plant.id}
-                                        plant={plant}
-                                        onToggleWater={(plantId) => {
-                                            // This would typically update the plant's needsWater status
-                                            // For now, we'll just show the current status
-                                            console.log(`Toggle water for plant ${plantId}`);
-                                        }}
-                                    />
-                                ))}
-                            </div>
-                        </div>
-                    )}
     
                 </div>
             </div>
@@ -765,7 +729,7 @@ const App: React.FC = () => {
                                 className="px-3 py-1 rounded bg-yellow-400 text-gray-900 text-xs hover:bg-yellow-500"
                                 onClick={e => {
                                     e.preventDefault();
-                                    setTempSelectedCrops(trackedCrops);
+                                    setTempSelectedCrops(trackedCrops.map(c => c.cropType));
                                 }}
                             >Reset</button>
                         </div>
@@ -781,7 +745,7 @@ const App: React.FC = () => {
                                             checked={!!tempSelectedCrops?.includes(crop.name)}
                                             onCheck={checked => {
                                                 setTempSelectedCrops(prev => {
-                                                    if (!prev) prev = trackedCrops;
+                                                    if (!prev) prev = trackedCrops.map(c => c.cropType);
                                                     if (checked) {
                                                         return [...prev, crop.name];
                                                     } else {
@@ -803,7 +767,7 @@ const App: React.FC = () => {
                             <button
                                 className="px-4 py-2 rounded bg-blue-600 text-white hover:bg-blue-700"
                                 onClick={() => {
-                                    handleTrackedCropsChange(tempSelectedCrops ?? trackedCrops);
+                                    handleTrackedCropsChange(tempSelectedCrops ?? trackedCrops.map(c => c.cropType));
                                     closeCropModal();
                                 }}
                             >Save</button>
